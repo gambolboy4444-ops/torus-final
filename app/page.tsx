@@ -1,63 +1,79 @@
-import Image from "next/image";
+"use client";
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
-export default function Home() {
+// --- Types & Constants ---
+type LogEntry = { id: string; type: 'INBOUND' | 'OUTBOUND' | 'SYSTEM' | 'ERROR'; name: string; timestamp: number; };
+const MOCK_NAMES = ['NEON_DRAGON', 'VOID_RUNNER', 'CYBER_KITSUNE', 'ZERO_PHANTOM', 'ECHO_ALPHA'];
+
+export default function Page() {
+  const [identity, setIdentity] = useState('TORUS_OPERATOR');
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [isBurstActive, setIsBurstActive] = useState(false);
+  const [isOnline, setIsOnline] = useState(false);
+  
+  const statsRef = useRef({ torusCash: 0, userCash: 0 });
+  const [displayStats, setDisplayStats] = useState({ torusCash: 0, userCash: 0 });
+  const burstTimerRef = useRef<any>(null);
+
+  const addLog = useCallback((type: LogEntry['type'], name: string) => {
+    const newLog: LogEntry = { id: Math.random().toString(36), type, name, timestamp: Date.now() };
+    setLogs(prev => [newLog, ...prev].slice(0, 50));
+  }, []);
+
+  const dispatchToCore = useCallback(async (targetName: string, isSilent = false) => {
+    try {
+      const response = await fetch('https://torus-genesis-core.vercel.app/api/ingress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'INGRESS', roomId: 'TORUS-SYNC-01', payload: { name: targetName } }),
+      });
+      if (response.ok) {
+        setIsOnline(true);
+        if (!isSilent) addLog('SYSTEM', "✅ GENESIS 接続成功");
+      }
+    } catch (e) {
+      if (!isSilent) addLog('ERROR', "❌ 送信失敗");
+    }
+  }, [addLog]);
+
+  const handleSinglePulse = () => {
+    dispatchToCore(identity);
+    addLog('OUTBOUND', `TX:PULSE_SENT`);
+    if ("vibrate" in navigator) navigator.vibrate(20);
+  };
+
+  useEffect(() => {
+    if (isBurstActive) {
+      burstTimerRef.current = setInterval(() => {
+        dispatchToCore(`${MOCK_NAMES[Math.floor(Math.random()*MOCK_NAMES.length)]}_${Math.random().toString(16).substring(10)}`, true);
+        statsRef.current.userCash += 1;
+        setDisplayStats({...statsRef.current});
+      }, 1000);
+    } else {
+      clearInterval(burstTimerRef.current);
+    }
+    return () => clearInterval(burstTimerRef.current);
+  }, [isBurstActive, dispatchToCore]);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+    <div className="min-h-screen bg-[#020617] text-slate-100 font-mono flex flex-col items-center p-4">
+      <header className="w-full max-w-md border border-slate-800 p-4 rounded-2xl mb-4 bg-[#0f172a]">
+        <h1 className="text-xs text-blue-400 font-black">TORUS SATELLITE V12.0.55</h1>
+        <div className="text-[10px] text-emerald-400">{isOnline ? '● STABLE' : '○ OFFLINE'}</div>
+      </header>
+
+      <main className="w-full max-w-md space-y-4">
+        <button onClick={() => setIsBurstActive(!isBurstActive)} className={`w-full py-12 rounded-3xl font-black text-3xl shadow-xl transition-all ${isBurstActive ? 'bg-blue-600' : 'bg-white text-black'}`}>
+          {isBurstActive ? 'STOP BURST' : '⚡ BURST'}
+        </button>
+
+        {/* 💠 復活の SINGLE PULSE */}
+        <button onClick={handleSinglePulse} className="w-full py-8 rounded-2xl font-black text-xl border-2 border-blue-500 bg-black text-white shadow-[0_0_20px_rgba(59,130,246,0.5)] active:scale-95">
+          SINGLE PULSE
+        </button>
+
+        <div className="bg-black/40 border border-slate-800 rounded-2xl p-4 h-64 overflow-y-auto text-[10px]">
+          {logs.map(log => <div key={log.id} className="mb-1">[{new Date(log.timestamp).toLocaleTimeString()}] {log.type}: {log.name}</div>)}
         </div>
       </main>
     </div>
