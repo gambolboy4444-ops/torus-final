@@ -3,12 +3,12 @@
 @tailwind utilities;
 
 :root {
-  --background: #020617;
-  --foreground: #ffffff;
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 2, 6, 23;
+  --background-end-rgb: 2, 6, 23;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-start-rgb));
 }
