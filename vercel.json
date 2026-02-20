@@ -1,10 +1,6 @@
 {
   "cleanUrls": true,
-  "framework": null,
-  "buildCommand": null,
-  "installCommand": null,
-  "outputDirectory": ".",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/app/page.tsx" }
+    { "source": "/(.*)", "destination": "/.next/server/app/page.html" }
   ]
 }
