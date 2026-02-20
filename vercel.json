@@ -1,6 +1,7 @@
 {
-  "cleanUrls": true,
+  "version": 2,
+  "public": true,
   "rewrites": [
-    { "source": "/(.*)", "destination": "/.next/server/app/page.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
