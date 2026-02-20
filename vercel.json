@@ -1,6 +1,7 @@
 {
   "version": 2,
+  "framework": "nextjs",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/app/page.tsx" }
+    { "source": "/(.*)", "destination": "/api/main" }
   ]
 }
