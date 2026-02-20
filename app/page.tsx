@@ -1,29 +1,36 @@
 "use client";
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Activity, Zap, ShieldCheck, Copy, Check } from 'lucide-react';
 
-export default function TorusSatellite() {
-  const [torusCash, setTorusCash] = useState(0);
-  const [userCash, setUserCash] = useState(0);
-  const [isBurstActive, setIsBurstActive] = useState(false);
+export default function App() {
   const [logs, setLogs] = useState<any[]>([]);
-  const [identity, setIdentity] = useState('OPERATOR_NODE_01');
-  const [isOnline, setIsOnline] = useState(true);
-  const [copyStatus, setCopyStatus] = useState(false);
-  
+  const [isBurstActive, setIsBurstActive] = useState(false);
+  const [torusCash, setTorusCash] = useState(0);
   const burstTimerRef = useRef<any>(null);
-  const ENDPOINT = 'https://torus-genesis-core.vercel.app/api/ingress';
-  const roomId = 'TORUS-SYNC-01';
 
-  const addLog = useCallback((msg: string, type: string = 'SYSTEM') => {
-    const newLog = {
-      id: Date.now(),
-      msg,
-      type,
-      time: new Date().toLocaleTimeString([], { hour12: false }),
-    };
-    setLogs(prev => [newLog, ...prev].slice(0, 15));
+  // 🛰️ 通信エンドポイント（司令官のngrok環境に準拠）
+  const ENDPOINT = 'https://improvident-tracklessly-kimberely.ngrok-free.dev/api/ingress';
+  const roomId = 'TORUS-FINAL-SESSION';
+
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      body { background-color: #020617 !important; color: #f8fafc !important; font-family: monospace; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100dvh; overflow: hidden; }
+      .torus-container { width: 100%; max-width: 380px; display: flex; flex-direction: column; align-items: center; padding: 2rem; box-sizing: border-box; }
+      .header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; opacity: 0.5; font-size: 10px; letter-spacing: 0.1em; }
+      .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; width: 100%; margin-bottom: 2rem; }
+      .card { background: #0f172a; border: 1px solid #1e293b; padding: 1.5rem 0.5rem; border-radius: 1.25rem; text-align: center; height: 100px; display: flex; flex-direction: column; justify-content: center; }
+      .card-label { font-size: 9px; color: #64748b; margin-bottom: 0.5rem; font-weight: bold; }
+      .card-value { font-size: 36px; font-weight: 900; line-height: 1; color: #ffffff; }
+      .btn { width: 100%; padding: 1.5rem; border-radius: 1.25rem; font-weight: 900; cursor: pointer; border: none; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.2em; transition: all 0.1s; }
+      .btn:active { transform: scale(0.96); opacity: 0.9; }
+      .burst-btn { background: #ffffff; color: #020617; }
+      .stop-btn { background: #ef4444; color: #ffffff; }
+      .pulse-btn { background: #0f172a; border: 2px solid #3b82f6 !important; color: #ffffff; text-shadow: 0 0 10px #3b82f6; }
+      .reset-btn { background: transparent; border: 1px solid #1e293b; color: #475569; padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-size: 9px; cursor: pointer; }
+      .log-box { width: 100%; height: 160px; background: rgba(0,0,0,0.4); border: 1px solid #1e293b; border-radius: 1.25rem; overflow-y: auto; padding: 1.25rem; font-size: 9px; margin-top: 1rem; }
+      .log-entry { margin-bottom: 8px; color: #3b82f6; border-left: 2px solid #3b82f6; padding-left: 10px; }
+    `;
+    document.head.appendChild(style);
   }, []);
 
   const dispatchToCore = useCallback(async (isSilent = false) => {
@@ -31,140 +38,43 @@ export default function TorusSatellite() {
       const res = await fetch(ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          type: 'INGRESS', 
-          roomId, 
-          payload: { name: identity, timestamp: Date.now() } 
-        }),
+        body: JSON.stringify({ type: 'INGRESS', roomId, payload: { name: 'OPERATOR' } }),
       });
-
       if (res.ok) {
         const data = await res.json();
+        // 🚀 核心修正: Python側の current_count を正直に反映
         if (data.current_count !== undefined) {
           setTorusCash(data.current_count);
         }
-        if (!isSilent) addLog(`PULSE_ACCEPTED`, 'SUCCESS');
+        if (!isSilent) setLogs(p => [{id:Date.now(), msg:"✅ CORE_SYNCHRONIZED"}, ...p].slice(0, 8));
       }
     } catch (e) {
-      if (!isSilent) addLog(`SYNC_FAILED`, 'ERROR');
-      setIsOnline(false);
+      if (!isSilent) setLogs(p => [{id:Date.now(), msg:"❌ CONNECTION_LOST"}, ...p].slice(0, 8));
     }
-  }, [identity, addLog]);
-
-  const handleSinglePulse = () => {
-    dispatchToCore();
-    if ("vibrate" in navigator) navigator.vibrate(40);
-  };
+  }, []);
 
   useEffect(() => {
-    if (isBurstActive) {
-      burstTimerRef.current = setInterval(() => dispatchToCore(true), 800);
-    } else {
-      if (burstTimerRef.current) clearInterval(burstTimerRef.current);
-    }
+    if (isBurstActive) { burstTimerRef.current = setInterval(() => dispatchToCore(true), 1000); }
+    else { clearInterval(burstTimerRef.current); }
     return () => clearInterval(burstTimerRef.current);
   }, [isBurstActive, dispatchToCore]);
 
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.innerHTML = `
-      @keyframes scanline { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
-      .crt-overlay::after {
-        content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
-        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-        z-index: 2; background-size: 100% 2px, 3px 100%; pointer-events: none;
-      }
-      .glitch-text { text-shadow: 0.05em 0 0 #00fffc, -0.03em -0.04em 0 #fc00ff, 0.025em 0.04em 0 #fffc00; }
-    `;
-    document.head.appendChild(style);
-    return () => { document.head.removeChild(style); };
-  }, []);
-
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-100 font-mono p-4 flex flex-col items-center crt-overlay relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-10 opacity-10">
-        <div className="w-full h-2 bg-blue-500/20 shadow-[0_0_15px_#3b82f6] animate-[scanline_8s_linear_infinite]" />
+    <div className="torus-container">
+      <div className="header">
+        <span style={{fontWeight: '900'}}>TORUS SATELLITE V12.4</span>
+        <button className="reset-btn" onClick={() => window.location.reload()}>RESET</button>
       </div>
-
-      <header className="w-full max-w-md mt-4 mb-6 z-20">
-        <div className="bg-[#0f172a]/80 border border-slate-800 p-4 rounded-2xl backdrop-blur-md flex items-center justify-between shadow-2xl">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${isBurstActive ? 'bg-blue-600 border-blue-400 shadow-[0_0_15px_#3b82f6]' : 'bg-slate-800 border-slate-700'}`}>
-              <Zap className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-[10px] uppercase tracking-[0.3em] text-blue-500 font-black">Satellite UI</h1>
-              <p className="text-sm font-black tracking-tighter">TORUS_BURST_V12.4</p>
-            </div>
-          </div>
-          <div className={`px-3 py-1 rounded-full border text-[10px] font-black flex items-center gap-2 ${isOnline ? 'border-emerald-500/50 text-emerald-400' : 'border-red-500/50 text-red-400'}`}>
-            <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-red-500 animate-pulse'}`} />
-            {isOnline ? 'STABLE' : 'LINK_LOST'}
-          </div>
-        </div>
-      </header>
-
-      <section className="w-full max-w-md grid grid-cols-2 gap-3 mb-6 z-20">
-        <div className="bg-[#0f172a]/60 border border-slate-800 p-5 rounded-2xl text-center shadow-lg relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 opacity-50" />
-          <p className="text-[9px] text-blue-400 uppercase font-black mb-1 tracking-widest">Torus Cash</p>
-          <p className="text-4xl font-black text-white glitch-text tracking-tighter">{torusCash.toLocaleString()}</p>
-        </div>
-        <div className="bg-[#0f172a]/60 border border-slate-800 p-5 rounded-2xl text-center shadow-lg relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-1 h-full bg-slate-700 opacity-50" />
-          <p className="text-[9px] text-slate-500 uppercase font-black mb-1 tracking-widest">User Signal</p>
-          <p className="text-4xl font-black text-slate-300 tracking-tighter">{userCash.toLocaleString()}</p>
-        </div>
-      </section>
-
-      <main className="w-full max-w-md flex flex-col gap-4 z-20">
-        <button
-          onClick={() => setIsBurstActive(!isBurstActive)}
-          className={`w-full py-12 rounded-3xl font-black text-4xl uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 flex flex-col items-center justify-center gap-3
-            ${isBurstActive ? 'bg-red-600 text-white' : 'bg-white text-slate-950 border-b-[10px] border-slate-300 active:border-b-0'}`}
-        >
-          <Zap className="w-8 h-8" />
-          <span>{isBurstActive ? 'STOP' : 'BURST'}</span>
-        </button>
-
-        <button
-          onClick={handleSinglePulse}
-          className="w-full py-6 rounded-2xl font-black text-lg uppercase tracking-[0.4em] transition-all active:scale-[0.98] flex items-center justify-center gap-4 border-2 bg-slate-950 border-slate-800 text-white"
-        >
-          <Activity className="w-6 h-6 text-blue-500" />
-          <span>SINGLE PULSE</span>
-        </button>
-
-        <div className="bg-[#0f172a]/40 border border-slate-800/60 rounded-2xl p-4">
-          <label className="text-[8px] text-slate-600 uppercase font-black tracking-[0.2em] mb-2 block">Node Identifier</label>
-          <div className="relative">
-            <input 
-              type="text" 
-              value={identity} 
-              onChange={(e) => setIdentity(e.target.value)}
-              className="w-full bg-black/40 border border-slate-800 rounded-xl px-4 py-3 text-blue-400 font-bold outline-none text-xs"
-            />
-          </div>
-        </div>
-
-        <div className="bg-black/40 border border-slate-800 rounded-2xl overflow-hidden h-48 flex flex-col shadow-inner">
-          <div className="px-4 py-3 bg-slate-900/80 border-b border-slate-800 flex justify-between items-center text-[9px] font-black text-slate-500 uppercase tracking-widest">
-            <span>Telemetry_Feed</span>
-          </div>
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
-            {logs.map((log) => (
-              <div key={log.id} className="text-[10px] flex gap-3 text-slate-400">
-                <span className="opacity-30">{log.time}</span>
-                <span className="font-bold uppercase tracking-tight">{log.msg}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </main>
-
-      <footer className="mt-8 mb-8 text-[10px] font-black tracking-[1em] text-slate-500 uppercase opacity-20">
-        TORUS
-      </footer>
+      <div className="stats-grid">
+        <div className="card"><div className="card-label">OPERATOR</div><div className="card-value">{torusCash}</div></div>
+        <div className="card"><div className="card-label">USERS</div><div className="card-value">0</div></div>
+      </div>
+      {!isBurstActive ? <button className="btn burst-btn" onClick={() => setIsBurstActive(true)}>⚡ BURST</button>
+      : <button className="btn stop-btn" onClick={() => setIsBurstActive(false)}>■ STOP</button>}
+      <button className="btn pulse-btn" onClick={() => dispatchToCore()}>💠 SINGLE PULSE</button>
+      <div className="log-box">
+        {logs.map(log => <div key={log.id} className="log-entry">{log.msg}</div>)}
+      </div>
     </div>
   );
 }
