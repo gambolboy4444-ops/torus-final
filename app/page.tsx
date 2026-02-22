@@ -1,10 +1,9 @@
 "use client";
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 export default function TorusSatellite() {
   const [torusCash, setTorusCash] = useState(0);
   const [logs, setLogs] = useState<{id: number, msg: string}[]>([]);
-  const [isBurstActive, setIsBurstActive] = useState(false);
   const identity = 'TORUS_OPERATOR';
 
   // 🛰️ 通信定義 (引き継ぎ書の生命線)
@@ -24,7 +23,6 @@ export default function TorusSatellite() {
       });
       if (res.ok) {
         const data = await res.json();
-        // 🚀 ここが生命線。Python側のキー名と一致させ数値を同期する
         if (data.current_count !== undefined) {
           setTorusCash(data.current_count);
         }
@@ -36,7 +34,7 @@ export default function TorusSatellite() {
   }, [identity]);
 
   return (
-    <div className={`min-h-screen bg-[#020617] text-slate-100 font-mono flex flex-col items-center p-4 sm:p-6`}>
+    <div className="min-h-screen bg-[#020617] text-slate-100 font-mono flex flex-col items-center p-4 sm:p-6">
       <header className="w-full max-w-md mt-2 mb-4 flex items-center justify-between bg-[#0f172a]/80 border border-slate-800 p-4 rounded-2xl backdrop-blur-md">
         <div>
           <h1 className="text-[8px] uppercase tracking-widest text-slate-500 font-black">Satellite UI</h1>
@@ -50,7 +48,7 @@ export default function TorusSatellite() {
 
       <div className="w-full max-w-md bg-[#0f172a]/60 border border-slate-800 p-5 rounded-2xl text-center shadow-lg mb-4">
         <p className="text-[8px] text-blue-400 uppercase font-black mb-1 tracking-wider">OPERATOR ❤️</p>
-        <p className="text-3xl font-black text-white select-all">{torusCash.toLocaleString()}</p>
+        <p className="text-3xl font-black text-white">{torusCash.toLocaleString()}</p>
       </div>
 
       <main className="w-full max-w-md flex flex-col gap-3">
@@ -69,7 +67,7 @@ export default function TorusSatellite() {
         </button>
 
         <div className="bg-black/40 border border-slate-800 rounded-2xl overflow-hidden mt-2 h-48 flex flex-col">
-          <div className="px-4 py-2 bg-[#0f172a]/80 border-b border-slate-800">
+          <div className="px-4 py-2 bg-[#0f172a]/80 border-b border-slate-800 flex justify-between">
             <span className="text-[8px] font-black text-slate-500 tracking-widest uppercase">TELEMETRY FEED</span>
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-1.5 text-[9px]">
