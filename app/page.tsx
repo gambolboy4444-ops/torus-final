@@ -1,12 +1,12 @@
 "use client";
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 export default function TorusSatellite() {
   const [torusCash, setTorusCash] = useState(0);
   const [logs, setLogs] = useState<{id: number, msg: string}[]>([]);
   const identity = 'TORUS_OPERATOR';
-
-  // 🛰️ 通信定義 (引き継ぎ書の生命線)
+  
+  // 🛰️ 通信定義：引き継ぎ書の生命線
   const ENDPOINT = 'https://torus-genesis-core.vercel.app/api/ingress';
   const roomId = 'TORUS-SYNC-01';
 
@@ -23,6 +23,7 @@ export default function TorusSatellite() {
       });
       if (res.ok) {
         const data = await res.json();
+        // 🚀 Python側の current_count と完全に一致させ、同期を完了させる
         if (data.current_count !== undefined) {
           setTorusCash(data.current_count);
         }
@@ -48,7 +49,7 @@ export default function TorusSatellite() {
 
       <div className="w-full max-w-md bg-[#0f172a]/60 border border-slate-800 p-5 rounded-2xl text-center shadow-lg mb-4">
         <p className="text-[8px] text-blue-400 uppercase font-black mb-1 tracking-wider">OPERATOR ❤️</p>
-        <p className="text-3xl font-black text-white">{torusCash.toLocaleString()}</p>
+        <p className="text-3xl font-black text-white select-all">{torusCash.toLocaleString()}</p>
       </div>
 
       <main className="w-full max-w-md flex flex-col gap-3">
@@ -67,7 +68,7 @@ export default function TorusSatellite() {
         </button>
 
         <div className="bg-black/40 border border-slate-800 rounded-2xl overflow-hidden mt-2 h-48 flex flex-col">
-          <div className="px-4 py-2 bg-[#0f172a]/80 border-b border-slate-800 flex justify-between">
+          <div className="px-4 py-2 bg-[#0f172a]/80 border-b border-slate-800">
             <span className="text-[8px] font-black text-slate-500 tracking-widest uppercase">TELEMETRY FEED</span>
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-1.5 text-[9px]">
