@@ -5,7 +5,7 @@ export default function TorusSatellite() {
   const [torusCash, setTorusCash] = useState(0);
   const [isBurstActive, setIsBurstActive] = useState(false);
   const [logs, setLogs] = useState<{id:number, msg:string}[]>([]);
-  const [ngrokUrl, setNgrokUrl] = useState(""); // 🚀 ここにngrokのURLを入れる
+  const [ngrokUrl, setNgrokUrl] = useState("");
   const burstTimerRef = useRef<any>(null);
 
   const addLog = (msg: string) => {
@@ -14,10 +14,9 @@ export default function TorusSatellite() {
 
   const dispatchToCore = useCallback(async (isSilent = false) => {
     if (!ngrokUrl) {
-      if (!isSilent) addLog("❌ URL_MISSING: 入力欄にngrokのURLを貼ってください");
+      if (!isSilent) addLog("❌ URL_MISSING");
       return;
     }
-
     try {
       const endpoint = `${ngrokUrl.replace(/\/$/, "")}/api/ingress`;
       const res = await fetch(endpoint, {
@@ -25,16 +24,13 @@ export default function TorusSatellite() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'INGRESS', roomId: 'TORUS-01', payload: { name: 'OPERATOR' } }),
       });
-      
       if (res.ok) {
         const data = await res.json();
-        if (data.current_count !== undefined) {
-          setTorusCash(data.current_count);
-        }
+        if (data.current_count !== undefined) setTorusCash(data.current_count);
         if (!isSilent) addLog("✅ CORE_SYNCHRONIZED");
       }
     } catch (e) {
-      if (!isSilent) addLog("❌ CONNECTION_LOST: URLを確認してください");
+      if (!isSilent) addLog("❌ CONNECTION_LOST");
     }
   }, [ngrokUrl]);
 
@@ -48,48 +44,50 @@ export default function TorusSatellite() {
   }, [isBurstActive, dispatchToCore]);
 
   return (
-    <main className="min-h-screen bg-[#020617] text-slate-100 font-mono flex flex-col items-center p-6">
-      {/* 🛠️ 秘密の入力欄: ここにURLを貼るだけで通信が繋がる */}
-      <div className="w-full max-w-md mb-6 p-4 bg-slate-900/50 border border-slate-800 rounded-2xl">
-        <label className="text-[10px] text-blue-400 font-black block mb-2 uppercase tracking-widest">Core Endpoint (ngrok)</label>
+    <div style={{ backgroundColor: '#020617', minHeight: '100vh', color: '#f8fafc', fontFamily: 'monospace', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px' }}>
+      
+      {/* 🚀 URL 入力エリア */}
+      <div style={{ width: '100%', maxWidth: '400px', marginBottom: '20px', padding: '16px', backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px' }}>
+        <label style={{ fontSize: '10px', color: '#3b82f6', fontWeight: '900', display: 'block', marginBottom: '8px', letterSpacing: '2px' }}>CORE ENDPOINT (NGROK)</label>
         <input 
           type="text" 
           value={ngrokUrl}
           onChange={(e) => setNgrokUrl(e.target.value)}
           placeholder="https://xxxx.ngrok-free.app"
-          className="w-full bg-black/50 border border-slate-700 rounded-lg px-3 py-2 text-xs text-emerald-400 outline-none focus:border-emerald-500"
+          style={{ width: '100%', backgroundColor: '#000', border: '1px solid #334155', borderRadius: '8px', padding: '10px', color: '#10b981', fontSize: '12px', outline: 'none' }}
         />
       </div>
 
-      <div className="w-full max-w-md bg-[#0f172a] border border-slate-800 p-8 rounded-[40px] text-center shadow-2xl mb-6">
-        <p className="text-[10px] text-blue-400 uppercase font-black mb-2 tracking-[0.2em]">Torus Cash</p>
-        <p className="text-6xl font-black text-white">{torusCash.toLocaleString()}</p>
+      {/* 💰 キャッシュ表示 */}
+      <div style={{ width: '100%', maxWidth: '400px', backgroundColor: '#0f172a', border: '1px solid #1e293b', padding: '32px', borderRadius: '40px', textAlign: 'center', marginBottom: '24px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)' }}>
+        <p style={{ fontSize: '10px', color: '#3b82f6', fontWeight: '900', marginBottom: '8px', letterSpacing: '2px' }}>TORUS CASH</p>
+        <p style={{ fontSize: '60px', fontWeight: '900', margin: '0', color: '#fff' }}>{torusCash.toLocaleString()}</p>
       </div>
 
-      <div className="w-full max-w-md space-y-4">
+      {/* ⚡ ボタンエリア */}
+      <div style={{ width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <button
           onClick={() => setIsBurstActive(!isBurstActive)}
-          className={`w-full py-10 rounded-3xl font-black text-3xl transition-all active:scale-95 shadow-2xl ${isBurstActive ? 'bg-slate-800 text-slate-500' : 'bg-white text-slate-950 border-b-8 border-slate-300'}`}
+          style={{ width: '100%', padding: '40px 0', borderRadius: '24px', fontWeight: '900', fontSize: '32px', border: 'none', cursor: 'pointer', transition: '0.2s', backgroundColor: isBurstActive ? '#1e293b' : '#fff', color: isBurstActive ? '#475569' : '#020617', boxShadow: isBurstActive ? 'none' : '0 8px 0 #cbd5e1' }}
         >
           {isBurstActive ? 'STOP BURST' : '⚡ BURST'}
         </button>
 
         <button
           onClick={() => dispatchToCore(false)}
-          className="w-full py-6 rounded-2xl font-black text-lg bg-[#0f172a] border-2 border-slate-700 active:bg-slate-800 transition-all text-white"
+          style={{ width: '100%', padding: '24px 0', borderRadius: '16px', fontWeight: '900', fontSize: '18px', backgroundColor: '#0f172a', border: '2px solid #334155', color: '#fff', cursor: 'pointer' }}
         >
           💠 SINGLE PULSE
         </button>
       </div>
 
-      <div className="w-full max-w-md mt-6 bg-black/40 border border-slate-800 rounded-2xl p-4 h-40 overflow-y-auto">
-        <p className="text-[8px] text-slate-600 font-black mb-2 tracking-widest">TELEMETRY</p>
+      {/* 📜 ログエリア */}
+      <div style={{ width: '100%', maxWidth: '400px', marginTop: '24px', backgroundColor: 'rgba(0,0,0,0.4)', border: '1px solid #1e293b', borderRadius: '16px', padding: '16px', height: '160px', overflowY: 'auto' }}>
+        <p style={{ fontSize: '8px', color: '#475569', fontWeight: '900', marginBottom: '8px', letterSpacing: '2px' }}>TELEMETRY</p>
         {logs.map(log => (
-          <div key={log.id} className="text-[10px] py-1 border-b border-slate-900 text-slate-400">
-            {log.msg}
-          </div>
+          <div key={log.id} style={{ fontSize: '10px', padding: '4px 0', borderBottom: '1px solid #0f172a', color: '#94a3b8' }}>{log.msg}</div>
         ))}
       </div>
-    </main>
+    </div>
   );
 }
